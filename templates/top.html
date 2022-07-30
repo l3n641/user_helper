@@ -1,0 +1,27 @@
+<div style="border-bottom: 1px solid #ddd;padding: 5px;">
+    <div>
+        <span> 选择请选择表</span>
+        <select name="tableName" id="tableName">
+            {{range $k, $v := .tables}}
+            <option value=" {{$v.TableName}}">{{$v.TableName}}</option>
+            {{end}}
+        </select>
+        <button id="select_table" onclick="load()">选择</button>
+        <input disabled id="category_index" style="width: 50px;">
+    </div>
+    <span class="action_group">
+        <label for="size_chart_input"> 批量修改尺码</label>
+        <input id="size_chart_input" placeholder="尺码" class="input_large">
+        <button type="button" onclick='update_all()'>提交</button>
+   </span>
+    <span class="action_group">
+        <label for="empty_field"> 删除空值</label>
+        <input id="empty_field" placeholder="空值字段" class="input_media">
+        <button type="button" onclick='deleteEmptyProduct()'>提交</button>
+   </span>
+    <span class="action_group">
+        <label for="new_category_name"> 重命名当前分类</label>
+        <input id="new_category_name" placeholder="新的分类名称" class="input_media">
+        <button type="button" onclick='renameCategory()'>提交</button>
+   </span>
+</div>

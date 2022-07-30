@@ -1,0 +1,266 @@
+<html>
+
+<head>
+    <meta charset="utf8"/>
+    <link rel="stylesheet" type="text/css" href="/css/common.css">
+    <style>
+        body {
+            font-size: 12px;
+            height: 100%;
+            margin: auto;
+            padding: 10px;
+        }
+
+        #cate_list_layout > div {
+            cursor: pointer;
+        }
+
+        #cate_list_layout > div * {
+            pointer-events: none;
+        }
+
+        #cate_list_layout > div.active {
+            font-weight: bold;
+        }
+
+        #product_layout {
+            position: absolute;
+            left: 310px;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            overflow: auto;
+        }
+
+        #product_list {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        #product_list td {
+            border: 1px solid #ddd;
+            text-align: left;
+            vertical-align: middle;
+            padding: 10px 5px;
+            background-color: unset;
+            font-size: 12px;
+        }
+
+        .main {
+            position: relative;
+            height: calc(100% - 80px);
+        }
+    </style>
+    <script type="text/javascript" src="js/product.js"></script>
+</head>
+
+<body>
+<div class="container">
+    {{ template "top.html" .}}
+    <div class="main">
+        <div id="cate_list_layout" style="position: absolute;height: 90%;width: 300px;overflow: auto;"></div>
+        <div id="product_layout">
+            <table id="product_list"></table>
+        </div>
+    </div>
+</div>
+</body>
+
+</html>
+
+<script>
+
+    const cat_layout = document.querySelector('#cate_list_layout')
+    var product_layout = document.querySelector("#product_list")
+    var source_list;
+    var target_list = []
+
+    cat_layout.addEventListener('click', function (e) {
+        if (e.target.hasAttribute("_index")) {
+            const _index = e.target.getAttribute("_index");
+            clicked(_index);
+
+            const ele_list = document.querySelectorAll('#cate_list_layout > div');
+            if (ele_list) {
+                ele_list.forEach(n => {
+                    n.classList.remove('active')
+                })
+            }
+
+            e.target.classList.add('active');
+            document.querySelector('#category_index').value = _index;
+
+        }
+    })
+
+    function clicked(i) {
+        product_layout.innerHTML = "";
+        const tmp = target_list[i];
+        for (let i = 0; i < tmp.data_list.length; i++) {
+            const data = source_list[tmp.data_list[i]]
+            const tr = document.createElement('tr');
+            const fields = ["Pictures", "Spu", "Name"];
+            for (let field of fields) {
+                const td = document.createElement('td');
+                if (field === "Pictures") {
+                    const images = data[field].split("|||")
+                    if (images.length > 0) {
+                        td.innerHTML = "<img src= '/image/" + images[0] + "' style='width:50px;'/>"
+                    }
+                } else {
+                    td.innerHTML = data[field] === void 0 ? '' : data[field];
+                }
+
+                tr.append(td)
+            }
+
+            const td = document.createElement('td');
+            const sizeChart = data["Size"] === void 0 ? '' : data["Size"]
+            const _index = tmp.data_list[i]
+            const html = `<input style="width:300px" value="${sizeChart}"><input value="提交" type="button" _index="${_index}" spu="${data['Spu']}" _index="" onclick="update_one(this)"></td>`
+            td.innerHTML = html
+            tr.append(td)
+            product_layout.append(tr)
+        }
+    }
+
+    function update_one(ele) {
+        const tableName = getTableName()
+        const value = ele.offsetParent.firstChild.value
+        const _index = ele.getAttribute('_index')
+        const spu = ele.getAttribute('spu')
+        source_list[_index]["Size"] = value
+        updateSizeChartBySpu(tableName, [spu], value)
+    }
+
+    function renameCategory() {
+        const tableName = getTableName()
+        const _index = document.querySelector('#category_index').value
+        const value = document.querySelector('#new_category_name').value
+
+        const category = target_list[_index]
+        const oldName = category.full_name.join("|||")
+        let full_name = [...category.full_name]
+        full_name.pop()
+        full_name.push(value)
+        const newName = full_name.join("|||")
+        renameProductCategory(tableName, oldName, newName)
+    }
+
+    function update_all() {
+        const _index = document.querySelector('#category_index').value
+        const value = document.querySelector('#size_chart_input').value
+        const tableName = getTableName()
+        let selectedProductSpu = []
+        if (!_index) return
+
+        const list = target_list[_index].data_list;
+        for (const index of list) {
+            source_list[index]["Size"] = value
+            selectedProductSpu.push(source_list[index]["Spu"])
+        }
+        clicked(_index)
+        updateSizeChartBySpu(tableName, selectedProductSpu, value)
+
+
+    }
+
+    function getTableName() {
+        const node = document.querySelector("#tableName")
+        const index = node.selectedIndex
+        const tableName = node.options[index].value
+        return tableName
+    }
+
+    function deleteEmptyProduct() {
+        const value = document.querySelector('#empty_field').value
+        const tableName = getTableName()
+        deleteProduct(tableName, value)
+
+    }
+
+    function load() {
+        const tableName = getTableName()
+        getProduct(tableName).then(loadCategory)
+        const selectTableButton = document.getElementById("select_table")
+        selectTableButton.disabled = true
+    }
+
+    function loadCategory(products) {
+        source_list = products
+        for (let index = 0; index < source_list.length; index++) {
+            if (!source_list[index]["Category"]) continue;
+            const clist = source_list[index]["Category"].split('==');
+            clist.forEach(full_cate => {
+                const full_cate_list = full_cate.split("|||");
+                //级别
+                const levels = full_cate_list.length;
+                var pid = -1;
+                let full_name = []
+                for (let l = 0; l < levels; l++) {
+                    const name = full_cate_list[l];
+                    full_name.push(name)
+                    var have = false;
+                    for (var i = 0; i < target_list.length; i++) {
+                        if (target_list[i].level == l && target_list[i].name == name && target_list[i].parent == pid) {
+                            target_list[i].num_total++;
+                            target_list[i].data_list.push(index);
+                            have = true;
+                            pid = i;
+                        }
+                    }
+                    if (!have) {
+                        target_list.push({
+                            level: l,
+                            name: name,
+                            num_total: 1,
+                            data_list: [index],
+                            parent: pid,
+                            full_name: [...full_name],
+                            levels: levels
+                        })
+                        pid = target_list.length - 1;
+                    }
+
+                }
+            });
+
+
+        }
+
+        for (var i0 = 0; i0 < target_list.length; i0++) {
+            var tmp0 = target_list[i0]
+            if (tmp0.level == 0) {
+                var div0 = document.createElement('div');
+                div0.innerHTML = tmp0.name + " (" + tmp0.num_total + ")";
+                div0.setAttribute('_index', i0);
+                cat_layout.append(div0);
+
+
+                for (var i1 = 0; i1 < target_list.length; i1++) {
+                    var tmp1 = target_list[i1];
+                    if (tmp1.level == 1 && tmp1.parent == i0) {
+                        var div1 = document.createElement('div');
+                        div1.innerHTML = tmp1.name + " (" + tmp1.num_total + ")";
+                        div1.setAttribute('_index', i1);
+                        div1.style.textIndent = "10px";
+                        cat_layout.append(div1);
+
+                        for (var i2 = 0; i2 < target_list.length; i2++) {
+                            var tmp2 = target_list[i2];
+                            if (tmp2.level == 2 && tmp2.parent == i1) {
+                                var div2 = document.createElement('div');
+                                div2.innerHTML = tmp2.name + " (" + tmp2.num_total + ")";
+                                div2.setAttribute('_index', i2);
+                                div2.style.textIndent = "20px";
+                                cat_layout.append(div2);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+</script>

@@ -1,0 +1,12 @@
+.action_group {
+    margin-right: 5px;
+}
+
+
+input.input_large {
+    width: 300px;
+}
+
+input.input_media {
+    width: 200px;
+}
