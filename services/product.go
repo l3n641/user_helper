@@ -13,13 +13,18 @@ type Product struct {
 func (p *Product) GetProductsByCategory(categoryName string) []models.Product {
 	var products []models.Product
 	db := p.GetDb()
-	db.Table(p.TableName).Where("category like ? ", categoryName+"%").Find(&products)
+	query := db.Table(p.TableName)
+	if categoryName != "" {
+		query = query.Where("category like ? ", categoryName+"%")
+
+	}
+	query.Find(&products)
 	return products
 }
 
 func (p *Product) UpdateSizeChartBySpu(size string, spuList []string) {
 	db := p.GetDb()
-	db.Table(p.TableName).Where("spu in ?", spuList).Update("size", size)
+	db.Table(p.TableName).Where("SKU in ?", spuList).Update("SIZE", size)
 }
 func (p *Product) UpdateSizeChartBySProductIds(size string, productIds []int) {
 	db := p.GetDb()

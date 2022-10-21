@@ -100,14 +100,16 @@
         for (let i = 0; i < tmp.data_list.length; i++) {
             const data = source_list[tmp.data_list[i]]
             const tr = document.createElement('tr');
-            const fields = ["Pictures", "Spu", "Name"];
+            const fields = ["featured_image", "SKU", "TITLE"];
             for (let field of fields) {
                 const td = document.createElement('td');
-                if (field === "Pictures") {
-                    const images = data[field].split("|||")
-                    if (images.length > 0) {
-                        td.innerHTML = "<img src= '/image/" + images[0] + "' style='width:50px;'/>"
-                    }
+                if (field === "featured_image") {
+                    const image = data[field]
+                    td.innerHTML = "<img src= '/image/" + image + "' style='width:50px;'/>"
+
+                } else if (field === "TITLE") {
+                    td.innerHTML = `<a href="${data['PageUrl']}" >${data["TITLE"]}</a>`
+
                 } else {
                     td.innerHTML = data[field] === void 0 ? '' : data[field];
                 }
@@ -116,9 +118,9 @@
             }
 
             const td = document.createElement('td');
-            const sizeChart = data["Size"] === void 0 ? '' : data["Size"]
+            const sizeChart = data["SIZE"] === void 0 ? '' : data["SIZE"]
             const _index = tmp.data_list[i]
-            const html = `<input style="width:300px" value="${sizeChart}"><input value="提交" type="button" _index="${_index}" spu="${data['Spu']}" _index="" onclick="update_one(this)"></td>`
+            const html = `<input style="width:300px" value="${sizeChart}"><input value="提交" type="button" _index="${_index}" spu="${data['SKU']}" _index="" onclick="update_one(this)"></td>`
             td.innerHTML = html
             tr.append(td)
             product_layout.append(tr)
@@ -140,11 +142,11 @@
         const value = document.querySelector('#new_category_name').value
 
         const category = target_list[_index]
-        const oldName = category.full_name.join("|||")
+        const oldName = category.full_name.join("->")
         let full_name = [...category.full_name]
         full_name.pop()
         full_name.push(value)
-        const newName = full_name.join("|||")
+        const newName = full_name.join("->")
         renameProductCategory(tableName, oldName, newName)
     }
 
@@ -157,8 +159,8 @@
 
         const list = target_list[_index].data_list;
         for (const index of list) {
-            source_list[index]["Size"] = value
-            selectedProductSpu.push(source_list[index]["Spu"])
+            source_list[index]["SIZE"] = value
+            selectedProductSpu.push(source_list[index]["SKU"])
         }
         clicked(_index)
         updateSizeChartBySpu(tableName, selectedProductSpu, value)
@@ -193,7 +195,7 @@
             if (!source_list[index]["Category"]) continue;
             const clist = source_list[index]["Category"].split('==');
             clist.forEach(full_cate => {
-                const full_cate_list = full_cate.split("|||");
+                const full_cate_list = full_cate.split("->");
                 //级别
                 const levels = full_cate_list.length;
                 var pid = -1;
